@@ -1,0 +1,197 @@
+
+@media (max-width: 768px) {
+
+  /* Home Page */
+  .home {
+    padding: 20px;
+    height: auto;
+  }
+  .home-title {
+    font-size: 1.8rem;
+  }
+  .home-text {
+    font-size: 1rem;
+  }
+  .home-illustration {
+    width: 200px;
+  }
+
+  /* About Page */
+  .about-card, .team-card {
+    width: 100%;
+    max-width: 350px;
+  }
+  .about-page h2 {
+    font-size: 26px;
+  }
+  .about-intro {
+    font-size: 15px;
+  }
+
+  /* Features Page */
+  .featuresList {
+    flex-direction: column;
+    align-items: center;
+  }
+  .featuresItem {
+    width: 90%;
+  }
+
+  /* Contact Page */
+  .contact-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  .contact-form, .contact-information {
+    width: 90%;
+    max-width: 400px;
+  }
+
+  /* BMI Page */
+  .bmi-container {
+    width: 90%;
+    padding: 15px;
+  }
+
+  /* Navbar */
+  .navbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .navbar .links {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .navbar .links a, .navbar .logout {
+    margin: 8px 0;
+    font-size:15px;
+  }
+  .navbar .logo img{
+    width: 35px;
+    height: 35px;
+  }
+  /* Footer */
+  footer{
+    text-align:center;
+    font-size: 14px;
+  }
+  .login-right, .register-right {
+    width: 90%;
+    margin: 20px auto;
+  }
+  .login-card, .register-card {
+    width: 100%;
+    padding: 20px;
+  }
+  .login-left, .register-left {
+    display: block;
+  }
+}
+
+/* ----- Mobile: max-width 480px ----- */
+@media (max-width: 480px) {
+
+  /* Home Page */
+  .home-title {
+    font-size: 1.5rem;
+  }
+  .home-text {
+    font-size: 0.9rem;
+  }
+  .home-illustration {
+    width: 150px;
+  }
+
+  /* About Page */
+  .about-page h2 {
+    font-size: 22px;
+  }
+  .about-intro {
+    font-size: 14px;
+  }
+  .about-team-container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Features Page */
+  .featuresTitle {
+    font-size: 1.8rem;
+  }
+  .featuresItem h3 {
+    font-size: 16px;
+  }
+  .featuresItem p {
+    font-size: 0.85rem;
+  }
+
+  /* Contact Page */
+  .contact-form input,
+  .contact-form textarea,
+  .contact-form button {
+    font-size: 14px;
+  }
+
+  /* BMI Page */
+  .bmi-container h2 {
+    font-size: 20px;
+  }
+  .bmi-container input,
+  .bmi-container button {
+    font-size: 14px;
+  }
+  /* Navbar */
+  .navbar .links a, .navbar .logout {
+    font-size: 14px;
+  }
+  .navbar .logo img {
+    width: 30px;
+    height: 30px;
+  }
+
+  /* Footer */
+  footer {
+    font-size: 12px;
+  }
+
+  /* Login/Register Pages */
+  .login-card, .register-card {
+    padding: 15px;
+  }
+  .login-btn, .register-btn {
+    width: 100%;
+    font-size: 14px;
+    padding: 10px;
+  }
+  .login-right, .register-right {
+    width: 95%;
+  }
+  .login-left, .register-left {
+    display: none; 
+  }
+
+  /* Admin Tables */
+  table {
+    width: 100%;
+    font-size: 14px;
+    display: block;
+    overflow-x: auto;
+  }
+  th, td {
+    padding: 8px;
+    white-space: nowrap;
+  }
+  thead {
+    display: none; /* optional: hide headers for very small screens */
+  }
+  tr {
+    display: block;
+    margin-bottom: 10px;
+  }
+  td {
+    display: flex;
+    justify-content: space-between;
+  }
+}
