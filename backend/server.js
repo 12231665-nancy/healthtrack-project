@@ -3,6 +3,7 @@ const mysql = require('mysql2');
 const cors = require('cors'); 
 const bcrypt = require("bcryptjs"); 
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const app = express(); 
 console.log("HEALTHTRACK SERVER FILE LOADED"); 
@@ -12,12 +13,13 @@ app.get('/', (req, res) => {
   return res.json("Backend is running"); 
 });
 const db = mysql.createConnection({ 
-  host: "localhost", 
-  user: "root", 
-  password: "1234", 
-  database:"healthtrack", 
-  port:3307 
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT
 });
+
 // to get all the users 
 app.get('/users', (req, res) => { 
   const sql = "SELECT * FROM users"; 
@@ -108,6 +110,7 @@ app.get('/contacts/:id', (req, res) => {
 });
 // to create a new contact
  app.post('/contacts', (req, res) => { 
+  console.log("Received contact data:", req.body);
   const { full_name, email, subject, message, user_id } = req.body; 
   const sql = "INSERT INTO contacts(full_name, email, subject, message, user_id) VALUES (?,?,?,?,?)";
   db.query(sql, [full_name, email, subject, message, user_id], (err, data) => { 
@@ -133,6 +136,25 @@ app.delete('/contacts/:id', (req, res) => {
   const sql = "DELETE FROM contacts WHERE id = ?"; 
   db.query(sql, [id], (err, data) => { 
     if (err) return res.send(err); 
+    return res.json(data); 
+  }); 
+});
+
+
+app.get('/messages', (req, res) => { 
+  const sql = "SELECT * FROM contacts"; 
+  db.query(sql, (err, data) => { 
+    if (err) return res.json(err); 
+    return res.json(data); 
+  }); 
+});
+
+
+app.get('/messages/user/:user_id', (req, res) => { 
+  const user_id = req.params.user_id;
+  const sql = "SELECT * FROM contacts WHERE user_id = ?"; 
+  db.query(sql, [user_id], (err, data) => { 
+    if (err) return res.json(err); 
     return res.json(data); 
   }); 
 });
@@ -200,6 +222,8 @@ db.connect((err) => {
 app.get('/check', (req, res) => { 
   res.json("CHECK OK"); 
 });
-app.listen(8083, () => { 
-  console.log("SERVER HEALTHTRACK RUNNING ON PORT 8083"); 
+
+const PORT = process.env.PORT || 8083;
+app.listen(PORT, () => {
+  console.log(`SERVER HEALTHTRACK RUNNING ON PORT ${PORT}`);
 });
