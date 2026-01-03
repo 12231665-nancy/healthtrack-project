@@ -9,15 +9,22 @@ const app = express();
 console.log("HEALTHTRACK SERVER FILE LOADED"); 
 app.use(cors()); 
 app.use(express.json()); 
-app.get('/', (req, res) => { 
-  return res.json("Backend is running"); 
-});
+app.get('/', (req, res) => res.json("Backend is running"));
+  app.get('/check', (req, res) => res.json("CHECK OK"));
+
 const db = mysql.createConnection({ 
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
   port: process.env.MYSQLPORT
+});
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection error:", err);
+  } else {
+    console.log("Connected to MySQL database!");
+  }
 });
 
 // to get all the users 
@@ -219,9 +226,7 @@ db.connect((err) => {
     console.log("Connected to MySQL database!"); 
   } 
 });
-app.get('/check', (req, res) => { 
-  res.json("CHECK OK"); 
-});
+
 
 const PORT = process.env.PORT || 8083;
 app.listen(PORT, () => {
