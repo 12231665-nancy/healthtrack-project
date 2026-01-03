@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { Link } from "react-router-dom";
+import { API_BASE_URL } from "../../config";
 
 function Dashboard() {
   const [usersCount, setUsersCount] = useState(0);
@@ -9,7 +10,7 @@ function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get("http://localhost:8083/users");
+        const res = await axios.get(`${API_BASE_URL}/users`);
         setUsersCount(res.data.length);
         setAdminsCount(res.data.filter(u => u.is_admin === 1).length);
       } catch (err) {

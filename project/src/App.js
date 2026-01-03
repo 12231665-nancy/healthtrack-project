@@ -17,6 +17,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import AdminDashboard from './pages/admin/Dashboard.js';
 import AdminUsers from './pages/admin/Users.js';
 import UserDetails from './pages/admin/UserDetails';
+import { API_BASE_URL } from "./config";
 
 
 
@@ -27,7 +28,7 @@ function App() {
       const fetchUser = async () => {
        
       try {
-        const res = await axios.get("http://localhost:8083/currentUser");
+        const res = await axios.get("${API_BASE_URL}/currentUser");
         setUser(res.data.user || null);
       } catch (err) {
         console.log("No user logged in yet");

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import "../styles/Contact.css";
 import { useNavigate } from "react-router-dom";
+import { API_BASE_URL } from "../config";
 
 function Contact({ user }) {
 
@@ -20,7 +21,7 @@ function Contact({ user }) {
     console.log("User ID being sent:", user.id);
     
   try {
-    await axios.post("http://localhost:8083/contacts", {
+    await axios.post("${API_BASE_URL}/contacts", {
       full_name: fullName,
       email,
       subject,

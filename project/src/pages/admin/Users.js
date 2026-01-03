@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../../config";
 
 function Users() {
   const [users, setUsers] = useState([]);
@@ -10,7 +11,7 @@ function Users() {
   const fetchUsers = async () => {
    
     try {
-      const res = await axios.get("http://localhost:8083/users");
+      const res = await axios.get(`${API_BASE_URL}/users`);
       setUsers(res.data);
     } catch (err) {
       console.log("Fetch error", err);
@@ -24,7 +25,7 @@ function Users() {
   const handleDelete = async (id) => {
     
       try {
-        await axios.delete(`http://localhost:8083/users/${id}`);
+        await axios.delete(`${API_BASE_URL}/users/${id}`);
         setUsers(users.filter(user => user.id !== id));
         
       } catch (err) {

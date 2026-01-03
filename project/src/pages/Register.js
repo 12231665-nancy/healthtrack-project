@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "../styles/Register.css";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 function Register() {
     const [fullName, setFullName]=useState("");
@@ -19,7 +20,7 @@ function Register() {
         return;
     }
     try {
-        await axios.post("http://localhost:8083/users", {
+        await axios.post("${API_BASE_URL}/users", {
             full_name: fullName,
             email,
             password,

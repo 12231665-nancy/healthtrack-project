@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL } from "../../config";
 
 function UserDetails() { 
     const { id } = useParams(); 
@@ -14,12 +15,12 @@ function UserDetails() {
                 console.log("Fetching details for user ID:", id);
                 
                 
-                const resUser = await axios.get(`http://localhost:8083/users/${id}`);
+                const resUser = await axios.get(`${API_BASE_URL}/users/${id}`);
                 console.log("User data:", resUser.data);
                 setUser(resUser.data[0]);
 
                 
-                const resBmi = await axios.get(`http://localhost:8083/bmi_records`);
+                const resBmi = await axios.get(`${API_BASE_URL}/bmi_records`);
                 console.log("All BMI records:", resBmi.data);
                 const userBmis = resBmi.data.filter(b => b.user_id === Number(id));
                 console.log("Filtered BMI for user:", userBmis);
@@ -29,14 +30,14 @@ function UserDetails() {
 
                 
                 try {
-                    const resMsg = await axios.get(`http://localhost:8083/messages/user/${id}`);
+                    const resMsg = await axios.get(`${API_BASE_URL}/messages/user/${id}`);
                     console.log("Messages from new endpoint:", resMsg.data);
                     setMessages(resMsg.data);
                 } catch (msgErr) {
                     console.log("New endpoint failed, trying /contacts...");
                     
                     
-                    const resContacts = await axios.get(`http://localhost:8083/contacts`);
+                    const resContacts = await axios.get(`${API_BASE_URL}/contacts`);
                     console.log("All contacts:", resContacts.data);
                     const userContacts = resContacts.data.filter(m => m.user_id === Number(id));
                     console.log("Filtered contacts for user:", userContacts);

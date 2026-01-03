@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../styles/Bmi.css";
 import axios from "axios";
+import { API_BASE_URL } from "../config";
 
 export default function BmiCalculator({ user }) {
   const [weight, setWeight] = useState(""); 
@@ -27,7 +28,7 @@ export default function BmiCalculator({ user }) {
       setAdvice(bmiAdvice);
 
       try {
-        await axios.post("http://localhost:8083/bmi_records", {
+        await axios.post("${API_BASE_URL}/bmi_records", {
         weight,
         height,
         bmi_value: result,
