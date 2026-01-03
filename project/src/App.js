@@ -24,20 +24,20 @@ import { API_BASE_URL } from "./config";
 function App() {
      const [user, setUser] = useState(null);
 
-  useEffect(() => {
-      const fetchUser = async () => {
-       
-      try {
-        const res = await axios.get("${API_BASE_URL}/currentUser");
-        setUser(res.data.user || null);
-      } catch (err) {
-        console.log("No user logged in yet");
-        setUser(null);
-      }
-    };
-    fetchUser();
+useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/currentUser`);
+      setUser(res.data.user || null);
+    } catch (err) {
+      console.log("No user logged in yet");
+      setUser(null);
+    }
+  };
 
-  }, []);
+  fetchUser();
+}, []);
+
 
   return (
     <Router>
