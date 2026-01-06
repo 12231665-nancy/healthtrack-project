@@ -39,7 +39,6 @@ useEffect(() => {
   fetchUser();
 }, []);
 
-
   return (
     <Router>
       {user && <Navbar  user={user} setUser={setUser}/>}
