@@ -263,6 +263,31 @@ app.get("/messages/user/:user_id", (req, res) => {
 
 // ---------------- BMI RECORDS ----------------
 
+// ADMIN: Get all BMI records with user info
+app.get("/admin/bmi_records", (req, res) => {
+  const sql = `
+    SELECT 
+      b.id,
+      b.weight,
+      b.height,
+      b.bmi_value,
+      b.created_at,
+      b.user_id,
+      u.full_name,
+      u.email
+    FROM bmi_records b
+    JOIN users u ON u.id = b.user_id
+    ORDER BY b.created_at DESC
+  `;
+
+  db.query(sql, (err, data) => {
+    if (err) {
+      return res.status(500).json({ message: err.message, code: err.code });
+    }
+    return res.json(data);
+  });
+});
+
 app.get("/bmi_records", (req, res) => {
   const sql = "SELECT * FROM bmi_records";
   db.query(sql, (err, data) => {
