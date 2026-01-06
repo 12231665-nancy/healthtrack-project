@@ -2,7 +2,6 @@ const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 const app = express();
@@ -17,7 +16,7 @@ process.on("unhandledRejection", (reason) => {
   console.error("UNHANDLED REJECTION:", reason);
 });
 
-// CORS
+// Middleware
 app.use(
   cors({
     origin: "https://healthtrack-project.vercel.app",
@@ -31,42 +30,46 @@ app.use(express.json());
 // Health check routes
 app.get("/", (req, res) => res.json("Backend is running"));
 app.get("/check", (req, res) => res.json("CHECK OK"));
+app.get("/currentUser", (req, res) => res.json({ user: null }));
 
-app.get("/currentUser", (req, res) => {
-  return res.json({ user: null });
-});
+// Database pool (Railway internal/private URL)
+if (!process.env.MYSQL_URL) {
+  console.error("MYSQL_URL is missing from environment variables");
+}
 
-// MySQL Pool Connection (Railway best practice)
-const db = mysql.createPool({
-  uri: process.env.MYSQL_URL,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const db = mysql.createPool(process.env.MYSQL_URL);
 
-// Test DB once at startup
+// Startup DB test
 db.query("SELECT 1", (err) => {
-  if (err) console.error("DB test failed:", err);
-  else console.log("DB connected using MYSQL_URL (pool).");
+  if (err) {
+    console.error("DB TEST FAILED:", err.code, err.message);
+  } else {
+    console.log("DB TEST OK");
+  }
+});
+
+// Debug endpoint to check DB anytime
+app.get("/dbcheck", (req, res) => {
+  db.query("SELECT 1", (err) => {
+    if (err) return res.status(500).json({ ok: false, code: err.code, error: err.message });
+    return res.json({ ok: true });
+  });
 });
 
 // USERS
 
 app.get("/users", (req, res) => {
-  const sql = "SELECT * FROM users";
-  db.query(sql, (err, data) => {
+  db.query("SELECT * FROM users", (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    res.json(data);
   });
 });
 
 app.get("/users/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "SELECT * FROM users WHERE id = ?";
-  db.query(sql, [id], (err, data) => {
+  db.query("SELECT * FROM users WHERE id = ?", [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    if (!data || data.length === 0)
-      return res.status(404).json({ message: "User not found" });
+    if (!data || data.length === 0) return res.status(404).json({ message: "User not found" });
     res.json(data);
   });
 });
@@ -82,30 +85,29 @@ app.post("/users", (req, res) => {
   const sql = "INSERT INTO users(full_name, email, password) VALUES (?,?,?)";
   db.query(sql, [full_name, email.trim(), password], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json({ message: "User created", data });
+    res.json({ message: "User created", data });
   });
 });
 
 app.put("/users/:id", (req, res) => {
   const id = req.params.id;
   const { full_name, email, password } = req.body || {};
-  const sql = "UPDATE users SET full_name= ?, email= ?, password= ? WHERE id = ?";
+  const sql = "UPDATE users SET full_name=?, email=?, password=? WHERE id=?";
   db.query(sql, [full_name, email, password, id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json({ message: "User updated", data });
+    res.json({ message: "User updated", data });
   });
 });
 
 app.delete("/users/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "DELETE FROM users WHERE id = ?";
-  db.query(sql, [id], (err, data) => {
+  db.query("DELETE FROM users WHERE id = ?", [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json({ message: "User deleted", data });
+    res.json({ message: "User deleted", data });
   });
 });
 
-// LOGIN (crash-proof)
+// LOGIN (crash-proof, bcrypt/plaintext auto-detect)
 
 app.post("/login", (req, res) => {
   const { email, password } = req.body || {};
@@ -123,7 +125,7 @@ app.post("/login", (req, res) => {
         return res.status(500).json({
           message: "Database error during login",
           code: err.code,
-          error: err.message,
+          error: err.message || "",
         });
       }
 
@@ -134,17 +136,14 @@ app.post("/login", (req, res) => {
       const user = data[0];
 
       if (!user || !user.password) {
-        return res.status(500).json({
-          message: "User record is missing password field",
-        });
+        return res.status(500).json({ message: "User record is missing password field" });
       }
 
-      let isMatch = false;
       const stored = String(user.password);
-
       const isBcryptHash =
         stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$");
 
+      let isMatch = false;
       if (isBcryptHash) {
         isMatch = await bcrypt.compare(password, stored);
       } else {
@@ -155,13 +154,6 @@ app.post("/login", (req, res) => {
         return res.status(401).json({ message: "Wrong password" });
       }
 
-      // Optional JWT (commented out)
-      // const token = jwt.sign(
-      //   { id: user.id, email: user.email, is_admin: user.is_admin },
-      //   process.env.JWT_SECRET,
-      //   { expiresIn: "7d" }
-      // );
-
       return res.json({
         message: "Login successful",
         user: {
@@ -170,14 +162,10 @@ app.post("/login", (req, res) => {
           email: user.email,
           is_admin: user.is_admin,
         },
-        // token
       });
     } catch (e) {
       console.error("LOGIN CALLBACK ERROR:", e);
-      return res.status(500).json({
-        message: "Server error during login",
-        error: e.message,
-      });
+      return res.status(500).json({ message: "Server error during login", error: e.message });
     }
   });
 });
@@ -185,34 +173,29 @@ app.post("/login", (req, res) => {
 // CONTACTS
 
 app.get("/contacts", (req, res) => {
-  const sql = "SELECT * FROM contacts";
-  db.query(sql, (err, data) => {
+  db.query("SELECT * FROM contacts", (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    res.json(data);
   });
 });
 
 app.get("/contacts/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "SELECT * FROM contacts WHERE id = ?";
-  db.query(sql, [id], (err, data) => {
+  db.query("SELECT * FROM contacts WHERE id = ?", [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    if (!data || data.length === 0)
-      return res.status(404).json({ message: "Contact not found" });
+    if (!data || data.length === 0) return res.status(404).json({ message: "Contact not found" });
     res.json(data);
   });
 });
 
 app.post("/contacts", (req, res) => {
-  console.log("Received contact data:", req.body);
-
   const { full_name, email, subject, message, user_id } = req.body || {};
   const sql =
     "INSERT INTO contacts(full_name, email, subject, message, user_id) VALUES (?,?,?,?,?)";
 
   db.query(sql, [full_name, email, subject, message, user_id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json({ message: "Contact created", data });
+    res.json({ message: "Contact created", data });
   });
 });
 
@@ -232,49 +215,43 @@ app.put("/contacts/:id", (req, res) => {
 
 app.delete("/contacts/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "DELETE FROM contacts WHERE id = ?";
-  db.query(sql, [id], (err, data) => {
+  db.query("DELETE FROM contacts WHERE id = ?", [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json({ message: "Contact deleted", data });
+    res.json({ message: "Contact deleted", data });
   });
 });
 
 // MESSAGES
 
 app.get("/messages", (req, res) => {
-  const sql = "SELECT * FROM contacts";
-  db.query(sql, (err, data) => {
+  db.query("SELECT * FROM contacts", (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    res.json(data);
   });
 });
 
 app.get("/messages/user/:user_id", (req, res) => {
   const user_id = req.params.user_id;
-  const sql = "SELECT * FROM contacts WHERE user_id = ?";
-  db.query(sql, [user_id], (err, data) => {
+  db.query("SELECT * FROM contacts WHERE user_id = ?", [user_id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    res.json(data);
   });
 });
 
 // BMI RECORDS
 
 app.get("/bmi_records", (req, res) => {
-  const sql = "SELECT * FROM bmi_records";
-  db.query(sql, (err, data) => {
+  db.query("SELECT * FROM bmi_records", (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    res.json(data);
   });
 });
 
 app.get("/bmi_records/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "SELECT * FROM bmi_records WHERE id = ?";
-  db.query(sql, [id], (err, data) => {
+  db.query("SELECT * FROM bmi_records WHERE id = ?", [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    if (!data || data.length === 0)
-      return res.status(404).json({ message: "Record not found" });
+    if (!data || data.length === 0) return res.status(404).json({ message: "Record not found" });
     res.json(data);
   });
 });
@@ -285,7 +262,7 @@ app.post("/bmi_records", (req, res) => {
 
   db.query(sql, [weight, height, bmi_value, user_id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json({ message: "BMI record created", data });
+    res.json({ message: "BMI record created", data });
   });
 });
 
@@ -305,11 +282,9 @@ app.put("/bmi_records/:id", (req, res) => {
 
 app.delete("/bmi_records/:id", (req, res) => {
   const id = req.params.id;
-  const sql = "DELETE FROM bmi_records WHERE id = ?";
-
-  db.query(sql, [id], (err, data) => {
+  db.query("DELETE FROM bmi_records WHERE id = ?", [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json({ message: "BMI record deleted", data });
+    res.json({ message: "BMI record deleted", data });
   });
 });
 
@@ -322,7 +297,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// START SERVER
+// Start server
 const PORT = process.env.PORT || 8083;
 app.listen(PORT, () => {
   console.log(`SERVER HEALTHTRACK RUNNING ON PORT ${PORT}`);
