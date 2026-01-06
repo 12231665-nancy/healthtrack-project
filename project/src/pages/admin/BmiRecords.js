@@ -116,6 +116,7 @@ const tableStyle = {
   boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
 };
 
+
 const thStyle = {
   padding: "15px",
   backgroundColor: "#2c3e50",
