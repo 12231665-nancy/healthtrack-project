@@ -34,7 +34,6 @@ export default function BmiCalculator({ user }) {
     else if (result >= 25 && result < 29.9)
       bmiAdvice = "You are overweight. Consider exercising daily.";
     else bmiAdvice = "You are obese. Please consult a doctor.";
-
     setAdvice(bmiAdvice);
 
     try {
@@ -45,9 +44,8 @@ export default function BmiCalculator({ user }) {
         user_id: user.id,
       };
 
-      console.log("API_BASE_URL:", API_BASE_URL);
-      console.log("Sending to:", `${API_BASE_URL}/bmi_records`);
-      console.log("Payload:", payload);
+      console.log("API_BASE_URL =", API_BASE_URL);
+      console.log("Posting to:", `${API_BASE_URL}/bmi_records`);
 
       const res = await axios.post(
         `${API_BASE_URL}/bmi_records`,
@@ -58,7 +56,7 @@ export default function BmiCalculator({ user }) {
         }
       );
 
-      console.log("BMI save response:", res.data);
+      console.log("Save response:", res.data);
 
       setMessage("Your BMI has been saved successfully!");
       setWeight("");
@@ -73,9 +71,7 @@ export default function BmiCalculator({ user }) {
     <div className="bmi-page">
       <div className="bmi-info">
         <h2>What is BMI?</h2>
-        <p>
-          Body Mass Index (BMI) is a measure of body fat based on your weight and height.
-        </p>
+        <p>Body Mass Index (BMI) is a measure of body fat based on your weight and height.</p>
         <h3>BMI Categories</h3>
         <ul>
           <li>Underweight: &lt;18.5</li>
@@ -83,7 +79,6 @@ export default function BmiCalculator({ user }) {
           <li>Overweight: 25–29.9</li>
           <li>Obese: 30+</li>
         </ul>
-        <p>Use this tool to check your BMI and get advice.</p>
       </div>
 
       <div className="bmi-container">
