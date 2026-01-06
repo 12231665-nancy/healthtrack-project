@@ -1,91 +1,80 @@
-import React, { useState } from "react";
-import "../styles/login.css";
-import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
-import { API_BASE_URL } from "../config";
+app.post("/login", (req, res) => {
+  try {
+    const { email, password } = req.body || {};
 
-function Login({ setUser }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const navigate = useNavigate();
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-
-    try {
-      const res = await axios.post(`${API_BASE_URL}/login`, {
-        email: email,
-        password: password,
-      });
-
-      console.log("Login response:", res.data); // ✅ helpful to see what backend returns
-
-      if (res.data.user) {
-        setUser(res.data.user);
-
-        // ✅ safer admin check (works if is_admin is 1, "1", true, etc.)
-        if (Boolean(res.data.user.is_admin)) {
-          navigate("/admin");
-        } else {
-          navigate("/home");
-        }
-      } else {
-        alert("No user returned from server");
-      }
-    } catch (err) {
-      console.log("Login error status:", err.response?.status);
-      console.log("Login error data:", err.response?.data);
-      console.log("Full error:", err);
-
-      alert(err.response?.data?.message || "Login failed");
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
     }
-  };
 
-  return (
-    <div className="login-page">
-      <div className="login-left">
-        <h1>Welcome to HealthTrack</h1>
-        <p>Track your health, BMI, and progress easily.</p>
-        <ul>
-          <li>✔ Calculate your BMI</li>
-          <li>✔ Save your health data</li>
-          <li>✔ Simple & secure</li>
-        </ul>
-      </div>
+    const sql = "SELECT * FROM users WHERE email = ? LIMIT 1";
 
-      <div className="login-right">
-        <div className="login-card">
-          <h2>Login to your account</h2>
+    db.query(sql, [email.trim()], async (err, data) => {
+      if (err) {
+        console.error("🔥 LOGIN SQL ERROR:", err);
+        return res.status(500).json({
+          message: "Database error during login",
+          code: err.code,
+          error: err.message
+        });
+      }
 
-          <form onSubmit={handleLogin}>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+      if (!data || data.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+      const user = data[0];
 
-            <button type="submit" className="login-btn">
-              Login now
-            </button>
-          </form>
+      if (!user.password) {
+        return res.status(500).json({ message: "User password missing in DB" });
+      }
 
-          <p className="login-link">
-            Don’t have an account? <Link to="/register">Register</Link>
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+      let isMatch = false;
 
-export default Login;
+      // ✅ Detect bcrypt hash (most bcrypt hashes start with $2a$ or $2b$)
+      const isBcryptHash =
+        typeof user.password === "string" &&
+        (user.password.startsWith("$2a$") ||
+          user.password.startsWith("$2b$") ||
+          user.password.startsWith("$2y$"));
+
+      if (isBcryptHash) {
+        // ✅ Secure compare
+        isMatch = await bcrypt.compare(password, user.password);
+      } else {
+        // ✅ Plaintext compare (fallback)
+        isMatch = user.password === password;
+      }
+
+      if (!isMatch) {
+        return res.status(401).json({ message: "Wrong password" });
+      }
+
+      // ✅ Optional: Create JWT token (only if you want)
+      // if (!process.env.JWT_SECRET) {
+      //   console.warn("⚠️ JWT_SECRET is not set in environment variables");
+      // }
+      // const token = jwt.sign(
+      //   { id: user.id, email: user.email, is_admin: user.is_admin },
+      //   process.env.JWT_SECRET,
+      //   { expiresIn: "7d" }
+      // );
+
+      return res.json({
+        message: "Login successful",
+        user: {
+          id: user.id,
+          full_name: user.full_name,
+          email: user.email,
+          is_admin: user.is_admin
+        },
+        // token
+      });
+    });
+  } catch (e) {
+    console.error("🔥 LOGIN SERVER ERROR:", e);
+    return res.status(500).json({
+      message: "Unexpected server error during login",
+      error: e.message
+    });
+  }
+});
