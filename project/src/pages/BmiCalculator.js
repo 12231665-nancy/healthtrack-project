@@ -31,8 +31,10 @@ export default function BmiCalculator({ user }) {
     let bmiAdvice = "";
     if (result < 18.5) bmiAdvice = "You are underweight. Try to eat more healthy meals.";
     else if (result >= 18.5 && result < 24.9) bmiAdvice = "Great! Your BMI is normal.";
-    else if (result >= 25 && result < 29.9) bmiAdvice = "You are overweight. Consider exercising daily.";
+    else if (result >= 25 && result < 29.9)
+      bmiAdvice = "You are overweight. Consider exercising daily.";
     else bmiAdvice = "You are obese. Please consult a doctor.";
+
     setAdvice(bmiAdvice);
 
     try {
@@ -43,7 +45,9 @@ export default function BmiCalculator({ user }) {
         user_id: user.id,
       };
 
-      console.log("Sending BMI payload:", payload);
+      console.log("API_BASE_URL:", API_BASE_URL);
+      console.log("Sending to:", `${API_BASE_URL}/bmi_records`);
+      console.log("Payload:", payload);
 
       const res = await axios.post(
         `${API_BASE_URL}/bmi_records`,
@@ -72,7 +76,6 @@ export default function BmiCalculator({ user }) {
         <p>
           Body Mass Index (BMI) is a measure of body fat based on your weight and height.
         </p>
-
         <h3>BMI Categories</h3>
         <ul>
           <li>Underweight: &lt;18.5</li>
@@ -80,10 +83,7 @@ export default function BmiCalculator({ user }) {
           <li>Overweight: 25–29.9</li>
           <li>Obese: 30+</li>
         </ul>
-
-        <p>
-          Use this tool to check your BMI and get advice on maintaining a healthy weight.
-        </p>
+        <p>Use this tool to check your BMI and get advice.</p>
       </div>
 
       <div className="bmi-container">
