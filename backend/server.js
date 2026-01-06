@@ -57,10 +57,13 @@ db.query("SELECT 1", (err) => {
 // Optional: DB check endpoint
 app.get("/dbcheck", (req, res) => {
   db.query("SELECT 1", (err) => {
-    if (err) return res.status(500).json({ ok: false, code: err.code, error: err.message });
+    if (err)
+      return res.status(500).json({ ok: false, code: err.code, error: err.message });
     return res.json({ ok: true });
   });
 });
+
+// ---------------- USERS ----------------
 
 app.get("/users", (req, res) => {
   const sql = "SELECT * FROM users";
@@ -81,21 +84,26 @@ app.get("/users/:id", (req, res) => {
 });
 
 app.post("/users", (req, res) => {
-  const { full_name, email, password } = req.body;
+  const { full_name, email, password } = req.body || {};
+
+  if (!full_name || !email || !password) {
+    return res.status(400).json({ message: "full_name, email, password are required" });
+  }
+
   const sql = "INSERT INTO users(full_name, email, password) VALUES (?,?,?)";
-  db.query(sql, [full_name, email, password], (err, data) => {
+  db.query(sql, [full_name, email.trim(), password], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    return res.json({ message: "User created", data });
   });
 });
 
 app.put("/users/:id", (req, res) => {
   const id = req.params.id;
-  const { full_name, email, password } = req.body;
+  const { full_name, email, password } = req.body || {};
   const sql = "UPDATE users SET full_name= ?, email= ?, password= ? WHERE id = ?";
   db.query(sql, [full_name, email, password, id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    return res.json({ message: "User updated", data });
   });
 });
 
@@ -104,16 +112,22 @@ app.delete("/users/:id", (req, res) => {
   const sql = "DELETE FROM users WHERE id = ?";
   db.query(sql, [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    return res.json({ message: "User deleted", data });
   });
 });
 
-// Login route (crash-proof, bcrypt/plaintext auto-detect)
+// ---------------- LOGIN ----------------
+
 app.post("/login", (req, res) => {
   const { email, password } = req.body || {};
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
+
   const sql = "SELECT * FROM users WHERE email = ? LIMIT 1";
 
-  db.query(sql, [email], async (err, data) => {
+  db.query(sql, [email.trim()], async (err, data) => {
     try {
       if (err) {
         console.error("LOGIN SQL ERROR:", err);
@@ -135,10 +149,12 @@ app.post("/login", (req, res) => {
       }
 
       const stored = String(user.password);
+
       const isBcryptHash =
         stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$");
 
       let isMatch = false;
+
       if (isBcryptHash) {
         isMatch = await bcrypt.compare(password, stored);
       } else {
@@ -149,7 +165,7 @@ app.post("/login", (req, res) => {
         return res.status(401).json({ message: "Wrong password" });
       }
 
-      res.json({
+      return res.json({
         message: "Login successful",
         user: {
           id: user.id,
@@ -167,6 +183,8 @@ app.post("/login", (req, res) => {
     }
   });
 });
+
+// ---------------- CONTACTS ----------------
 
 app.get("/contacts", (req, res) => {
   const sql = "SELECT * FROM contacts";
@@ -188,24 +206,27 @@ app.get("/contacts/:id", (req, res) => {
 
 app.post("/contacts", (req, res) => {
   console.log("Received contact data:", req.body);
-  const { full_name, email, subject, message, user_id } = req.body;
+  const { full_name, email, subject, message, user_id } = req.body || {};
+
   const sql =
     "INSERT INTO contacts(full_name, email, subject, message, user_id) VALUES (?,?,?,?,?)";
+
   db.query(sql, [full_name, email, subject, message, user_id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    return res.json({ message: "Contact created", data });
   });
 });
 
 app.put("/contacts/:id", (req, res) => {
   const id = req.params.id;
-  const { full_name, email, subject, message, user_id } = req.body;
+  const { full_name, email, subject, message, user_id } = req.body || {};
+
   db.query(
     "UPDATE contacts SET full_name=?, email=?, subject=?, message=?, user_id=? WHERE id=?",
     [full_name, email, subject, message, user_id, id],
     (err, data) => {
       if (err) return res.status(500).json({ message: err.message, code: err.code });
-      res.json(data);
+      res.json({ message: "Contact updated", data });
     }
   );
 });
@@ -213,11 +234,14 @@ app.put("/contacts/:id", (req, res) => {
 app.delete("/contacts/:id", (req, res) => {
   const id = req.params.id;
   const sql = "DELETE FROM contacts WHERE id = ?";
+
   db.query(sql, [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    return res.json({ message: "Contact deleted", data });
   });
 });
+
+// ---------------- MESSAGES ----------------
 
 app.get("/messages", (req, res) => {
   const sql = "SELECT * FROM contacts";
@@ -230,11 +254,14 @@ app.get("/messages", (req, res) => {
 app.get("/messages/user/:user_id", (req, res) => {
   const user_id = req.params.user_id;
   const sql = "SELECT * FROM contacts WHERE user_id = ?";
+
   db.query(sql, [user_id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
     return res.json(data);
   });
 });
+
+// ---------------- BMI RECORDS ----------------
 
 app.get("/bmi_records", (req, res) => {
   const sql = "SELECT * FROM bmi_records";
@@ -254,24 +281,37 @@ app.get("/bmi_records/:id", (req, res) => {
   });
 });
 
+// UPDATED BMI INSERT: includes created_at
 app.post("/bmi_records", (req, res) => {
-  const { weight, height, bmi_value, user_id } = req.body;
-  const sql = "INSERT INTO bmi_records(weight, height, bmi_value, user_id) VALUES (?,?,?,?)";
+  const { weight, height, bmi_value, user_id } = req.body || {};
+
+  if (!weight || !height || !bmi_value || !user_id) {
+    return res.status(400).json({ message: "Missing required BMI fields" });
+  }
+
+  const sql =
+    "INSERT INTO bmi_records(weight, height, bmi_value, user_id, created_at) VALUES (?,?,?,?,NOW())";
+
   db.query(sql, [weight, height, bmi_value, user_id], (err, data) => {
-    if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    if (err) {
+      console.error("BMI INSERT ERROR:", err.code, err.message);
+      return res.status(500).json({ message: err.message, code: err.code });
+    }
+
+    return res.json({ message: "BMI record created", data });
   });
 });
 
 app.put("/bmi_records/:id", (req, res) => {
   const id = req.params.id;
-  const { weight, height, bmi_value, user_id } = req.body;
+  const { weight, height, bmi_value, user_id } = req.body || {};
+
   db.query(
     "UPDATE bmi_records SET weight=?, height=?, bmi_value=?, user_id=? WHERE id=?",
     [weight, height, bmi_value, user_id, id],
     (err, data) => {
       if (err) return res.status(500).json({ message: err.message, code: err.code });
-      res.json(data);
+      res.json({ message: "BMI record updated", data });
     }
   );
 });
@@ -279,12 +319,14 @@ app.put("/bmi_records/:id", (req, res) => {
 app.delete("/bmi_records/:id", (req, res) => {
   const id = req.params.id;
   const sql = "DELETE FROM bmi_records WHERE id = ?";
+
   db.query(sql, [id], (err, data) => {
     if (err) return res.status(500).json({ message: err.message, code: err.code });
-    return res.json(data);
+    return res.json({ message: "BMI record deleted", data });
   });
 });
 
+// Global error handler
 app.use((err, req, res, next) => {
   console.error("UNHANDLED EXPRESS ERROR:", err);
   res.status(500).json({ message: "Internal Server Error", error: err.message });
