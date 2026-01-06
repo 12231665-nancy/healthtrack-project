@@ -16,6 +16,7 @@ import './styles/responsive.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import AdminDashboard from './pages/admin/Dashboard.js';
 import AdminUsers from './pages/admin/Users.js';
+import BmiRecords from "./pages/admin/BmiRecords";
 import UserDetails from './pages/admin/UserDetails';
 import { API_BASE_URL } from "./config";
 
@@ -55,7 +56,8 @@ useEffect(() => {
         <Route path="/admin" element={user?.is_admin ? <AdminDashboard /> : <Navigate to="/home" />}/>
         <Route path="/admin/users" element={user?.is_admin ? <AdminUsers /> : <Navigate to="/home" />}/>
         <Route path="/admin/users/:id" element={user?.is_admin ? <UserDetails /> : <Navigate to="/home" />} />
-        
+        <Route path="/admin/bmi-records" element={user?.is_admin ? <BmiRecords /> : <Navigate to="/home" />} />
+
       </Routes>
       {user &&<Footer />}
     </Router>
